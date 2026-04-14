@@ -105,23 +105,34 @@ def main_loop():
             print(f"Health: {H:.3f}")
 
             # ✅ FIXED: correct placement
-            latest_data[svc] = {
-                "latency": latency,
-                "cpu": cpu,
-                "memory": mem,
-                "health": H
-            }
+            latest_data["services"] = {}
 
-        H_total = min(health_scores)
+            for svc in services:
+                latency, cpu, mem, H = compute_service_health(svc, metrics)
+
+                latest_data["services"][svc] = {
+                    "latency": latency,
+                    "cpu": cpu,
+                    "memory": mem,
+                    "health": H
+                }
+
+        # Aggregate
+        H_total = sum(health_scores) / len(health_scores)
+
+        # Decision
+        
+        latest_data["system_health"] = H_total
 
         print("\n---------------------------")
         print(f"System Health (min): {H_total:.3f}")
+        
 
         latest_data["system_health"] = H_total
-
+        print("DEBUG ENGINE DATA:", latest_data)
         current_time = time.time()
 
-        if H_total < 0.75:
+        if H_total < 0.75 or any(h < 0.5 for h in health_scores):
             if current_time - last_rollback_time < COOLDOWN:
                 print("⏳ In cooldown period — skipping rollback")
             else:
