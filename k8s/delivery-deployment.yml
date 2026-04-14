@@ -15,6 +15,6 @@ spec:
       containers:
         - name: delivery
           image: miniproject-delivery:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 5003

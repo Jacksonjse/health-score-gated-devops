@@ -15,6 +15,6 @@ spec:
       containers:
         - name: order
           image: miniproject-order:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 5001

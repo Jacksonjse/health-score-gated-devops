@@ -15,6 +15,6 @@ spec:
       containers:
         - name: tracking
           image: miniproject-tracking:latest
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           ports:
             - containerPort: 5002
