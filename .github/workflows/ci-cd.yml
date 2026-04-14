@@ -6,20 +6,29 @@ on:
       - main
 
 jobs:
-  build-test-deploy:
+
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Docker
+      - name: Build Docker Images
         run: |
-          docker --version
+          docker compose up --build
 
-      - name: Build & Start Services
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Start Services
         run: |
-          docker compose up -d --build
+          docker compose up -d
 
       - name: Wait for services
         run: sleep 20
@@ -40,9 +49,17 @@ jobs:
             echo "status=pass" >> $GITHUB_OUTPUT
           fi
 
+    outputs:
+      result: ${{ steps.health.outputs.status }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
       - name: Decision Gate
         run: |
-          if [ "${{ steps.health.outputs.status }}" = "fail" ]; then
+          if [ "${{ needs.test.outputs.result }}" = "fail" ]; then
             echo "❌ Deployment Blocked (Rollback)"
             exit 1
           else
