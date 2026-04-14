@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  order:
+    image: order:stable
+    ports:
+      - "5001:5001"
+
+  tracking:
+    image: tracking:stable
+    ports:
+      - "5002:5002"
+
+  delivery:
+    image: delivery:stable
+    ports:
+      - "5003:5003"
