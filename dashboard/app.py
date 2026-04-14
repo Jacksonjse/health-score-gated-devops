@@ -76,96 +76,42 @@ else:
 # ─────────────────────────────────────────────
 # REAL health loop wrapper
 # ─────────────────────────────────────────────
-def _real_health_loop() -> None:
-    """Wraps health_multi.main_loop and mirrors its data into latest_data."""
-    SERVICES = ["order", "tracking", "delivery"]
-    LATENCY_THRESHOLD = 0.5
-    DB_THRESHOLD = 0.3
-    COOLDOWN = 60
-    wL, wE, wC, wM, wD = 0.30, 0.30, 0.15, 0.15, 0.10
-    last_rollback = 0
+def _real_health_loop():
+    """
+    Uses health_multi as the single source of truth
+    and mirrors its data into dashboard state.
+    """
+    import sys
+    import os
+    import time
 
-    import requests, subprocess
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from health import health_multi
 
-    def _query(promql):
-        try:
-            res = requests.get("http://localhost:9090/api/v1/query",
-                               params={"query": promql}, timeout=2).json()
-            val = float(res["data"]["result"][0]["value"][1])
-            return 0.0 if math.isnan(val) else val
-        except Exception:
-            return 0.0
+    log_event("🚀 Real health engine started (linked to health_multi)")
 
-    def _k8s_metrics():
-        data = {}
-        try:
-            out = subprocess.check_output(["kubectl", "top", "pods"],
-                                          timeout=5).decode()
-            for line in out.strip().split("\n")[1:]:
-                parts = line.split()
-                pod, cpu_raw, mem_raw = parts[0], parts[1], parts[2]
-                cpu = int(cpu_raw.replace("m", ""))
-                mem = int(mem_raw.replace("Mi", ""))
-                for svc in SERVICES:
-                    if pod.startswith(svc):
-                        data[svc] = (cpu, mem)
-        except Exception as exc:
-            log_event(f"⚠️ kubectl error: {exc}")
-        return data
+    # Start actual engine in background
+    threading.Thread(target=health_multi.main_loop, daemon=True).start()
 
-    def _score(svc, metrics):
-        latency    = _query(f"rate({svc}_latency_seconds_sum[1m]) / "
-                            f"rate({svc}_latency_seconds_count[1m])")
-        cpu, memory = metrics.get(svc, (0, 0))
-        error_rate  = 0.05
-        db_latency  = 0.10
-        SL = max(0, 1 - latency  / LATENCY_THRESHOLD)
-        SE = 1 - error_rate
-        SC = 1 - min(cpu    / 500,  1)
-        SM = 1 - min(memory / 200,  1)
-        SD = max(0, 1 - db_latency / DB_THRESHOLD)
-        H  = wL*SL + wE*SE + wC*SC + wM*SM + wD*SD
-        return latency, cpu, memory, H
-
-    log_event("🚀 Real health engine started")
-
+    # Sync loop (dashboard ← engine)
     while True:
-        metrics = _k8s_metrics()
-        scores  = []
-        svc_snapshot = {}
+        try:
+            with _lock:
+                latest_data["services"] = health_multi.latest_data.get("services", {})
+                latest_data["system_health"] = health_multi.latest_data.get("system_health", 0)
+                latest_data["last_update"] = time.strftime("%Y-%m-%d %H:%M:%S")
 
-        for svc in SERVICES:
-            lat, cpu, mem, H = _score(svc, metrics)
-            scores.append(H)
-            svc_snapshot[svc] = {"latency": lat, "cpu": cpu,
-                                  "memory": mem, "health": H}
+                # Optional enrichments
+                if "last_event" in health_multi.latest_data:
+                    latest_data["last_event"] = health_multi.latest_data["last_event"]
 
-        H_total = min(scores)
-        now     = time.time()
+                if "last_rollback" in health_multi.latest_data:
+                    latest_data["last_rollback"] = health_multi.latest_data["last_rollback"]
 
-        with _lock:
-            latest_data["services"]     = svc_snapshot
-            latest_data["system_health"] = H_total
-            latest_data["last_update"]  = time.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            log_event(f"⚠️ Sync error: {e}")
 
-        if H_total < 0.75:
-            if now - last_rollback < COOLDOWN:
-                log_event("⏳ System degraded — cooldown active, rollback skipped")
-            else:
-                bad = [SERVICES[i] for i, h in enumerate(scores) if h < 0.75]
-                for svc in bad:
-                    subprocess.run(
-                        ["kubectl", "rollout", "undo", f"deployment/{svc}"],
-                        capture_output=True)
-                last_rollback = now
-                with _lock:
-                    latest_data["last_rollback"]  = time.strftime("%Y-%m-%d %H:%M:%S")
-                    latest_data["rollback_count"] += 1
-                log_event(f"🔁 Rollback triggered for: {', '.join(bad)}")
-        else:
-            log_event("✅ All services healthy")
-
-        time.sleep(5)
+        time.sleep(2)
 
 
 # ─────────────────────────────────────────────
