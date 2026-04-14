@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  order:
+    build: ./order_service
+    ports:
+      - "5001:5001"
+
+  tracking:
+    build: ./tracking_service
+    ports:
+      - "5002:5002"
+
+  delivery:
+    build: ./delivery_service
+    ports:
+      - "5003:5003"
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"

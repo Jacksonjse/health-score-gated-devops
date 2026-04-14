@@ -1,0 +1,50 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker
+        run: |
+          docker --version
+
+      - name: Build & Start Services
+        run: |
+          docker-compose up -d --build
+
+      - name: Wait for services
+        run: sleep 20
+
+      - name: Install Python deps
+        run: |
+          pip install requests
+
+      - name: Run Health Check
+        id: health
+        run: |
+          python health/health_score.py > output.txt
+          cat output.txt
+
+          if grep -q "ROLLBACK" output.txt; then
+            echo "status=fail" >> $GITHUB_OUTPUT
+          else
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Decision Gate
+        run: |
+          if [ "${{ steps.health.outputs.status }}" = "fail" ]; then
+            echo "❌ Deployment Blocked (Rollback)"
+            exit 1
+          else
+            echo "✅ Deployment Approved"
+          fi
