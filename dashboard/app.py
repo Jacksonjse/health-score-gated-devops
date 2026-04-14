@@ -11,12 +11,13 @@ If Kubernetes / Prometheus are unavailable, mock data is served
 so the dashboard UI can still be developed / demoed.
 """
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import threading
 import time
 import random
 import math
 import os
+import subprocess
 
 app = Flask(__name__)
 
@@ -76,6 +77,33 @@ else:
 # ─────────────────────────────────────────────
 # REAL health loop wrapper
 # ─────────────────────────────────────────────
+import subprocess
+
+@app.route("/simulate_rollback", methods=["POST"])
+def simulate_rollback():
+    services = ["order", "tracking", "delivery"]
+
+    rolled_back = []
+
+    for svc in services:
+        result = subprocess.run(
+            ["kubectl", "rollout", "undo", f"deployment/{svc}"],
+            capture_output=True,
+            text=True
+        )
+
+        if "no rollout history" not in result.stderr:
+            rolled_back.append(svc)
+
+    with _lock:
+        latest_data["last_event"] = f"⚠️ Manual rollback triggered: {', '.join(rolled_back)}"
+        latest_data["rollback_count"] += 1
+
+    return jsonify({
+        "status": "success",
+        "rolled_back": rolled_back
+    })
+
 def _real_health_loop():
     """
     Uses health_multi as the single source of truth

@@ -24,16 +24,24 @@
       </div>
     </div>
     <div class="topbar-right">
-      <span class="meta-item">
-        <span class="meta-icon">🕐</span>
-        <span id="last-update">—</span>
-      </span>
-      <span class="meta-item">
-        <span class="meta-icon">🔁</span>
-        Rollbacks: <span id="rollback-count">0</span>
-      </span>
-      <span class="poll-pill" id="poll-pill">LIVE</span>
-    </div>
+  <span class="meta-item">
+    <span class="meta-icon">🕐</span>
+    <span id="last-update">—</span>
+  </span>
+
+  <span class="meta-item">
+    <span class="meta-icon">🔁</span>
+    Rollbacks: <span id="rollback-count">0</span>
+  </span>
+
+  <span class="poll-pill" id="poll-pill">LIVE</span>
+
+  <!-- 🚨 NEW ROLLBACK BUTTON -->
+  <button onclick="triggerRollback()" id="rollbackBtn" class="rollback-btn">
+    🚨 Rollback
+  </button>
+</div>
+    
   </header>
 
   <!-- ── ALERT BANNER (hidden until triggered) ─ -->

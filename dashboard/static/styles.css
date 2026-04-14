@@ -677,3 +677,67 @@ body {
   .topbar-left .logo-sub { display: none; }
   .topbar-right .meta-item:first-child { display: none; }
 }
+
+/* 🔴 Rollback Button */
+.rollback-btn {
+  margin-left: 12px;
+  background: linear-gradient(135deg, #ff4d4d, #cc0000);
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(255, 0, 0, 0.25);
+  transition: all 0.2s ease;
+}
+
+/* Hover effect */
+.rollback-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(255, 0, 0, 0.4);
+}
+
+/* Click effect */
+.rollback-btn:active {
+  transform: scale(0.95);
+}
+
+/* Disabled state */
+.rollback-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 🔴 Rollback Button */
+.rollback-btn {
+  margin-left: 12px;
+  background: linear-gradient(135deg, #ff4d4d, #cc0000);
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(255, 0, 0, 0.25);
+  transition: all 0.2s ease;
+}
+
+/* Hover effect */
+.rollback-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(255, 0, 0, 0.4);
+}
+
+/* Click effect */
+.rollback-btn:active {
+  transform: scale(0.95);
+}
+
+/* Disabled state */
+.rollback-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

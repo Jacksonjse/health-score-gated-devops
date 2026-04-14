@@ -37,7 +37,13 @@ sleep 20
 # STEP 3: Deploy base K8s configs
 # -------------------------------
 echo "🔹 Applying Kubernetes configs..."
-kubectl wait --for=condition=Ready node/minikube --timeout=120s
+kubectl apply -f k8s/order-deployment.yml
+kubectl apply -f k8s/tracking-deployment.yml
+kubectl apply -f k8s/delivery-deployment.yml
+
+kubectl apply -f k8s/order-service.yml
+kubectl apply -f k8s/tracking-service.yml
+kubectl apply -f k8s/delivery-service.yml
 
 # -------------------------------
 # STEP 4: Ensure rollout history

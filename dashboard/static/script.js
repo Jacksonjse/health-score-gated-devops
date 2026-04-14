@@ -105,7 +105,16 @@ function makeTimeSeriesChart(canvasId, datasets, yLabel, yMin, yMax, tickFmt) {
     },
   });
 }
-
+function triggerRollback() {
+    fetch('/simulate_rollback', {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Rollback triggered for: " + data.rolled_back.join(", "));
+    })
+    .catch(err => console.error(err));
+}
 // Build dataset specs for each service
 function svcDatasets(field) {
   return SERVICES.map(svc => ({
