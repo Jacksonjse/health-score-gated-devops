@@ -12,7 +12,7 @@ if [ -z "$TAG" ]; then
   exit 1
 fi
 
-IMAGE_PREFIX="your-dockerhub-username/miniproject"
+IMAGE_PREFIX="jksonjse/miniproject"
 
 # -------------------------------
 # STEP 1: Start Minikube
