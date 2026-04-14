@@ -17,8 +17,14 @@ IMAGE_PREFIX="jksonjse/miniproject"
 # -------------------------------
 # STEP 1: Start Minikube
 # -------------------------------
-echo "🔹 Starting Minikube..."
-minikube start
+echo "🔹 Checking Minikube..."
+
+if minikube status | grep -q "Running"; then
+  echo "✅ Minikube already running"
+else
+  echo "🚀 Starting Minikube..."
+  minikube start --driver=docker --memory=2000 --cpus=2
+fi
 
 # -------------------------------
 # STEP 2: Enable Metrics Server
@@ -31,7 +37,7 @@ sleep 20
 # STEP 3: Deploy base K8s configs
 # -------------------------------
 echo "🔹 Applying Kubernetes configs..."
-kubectl apply -f k8s/
+kubectl wait --for=condition=Ready node/minikube --timeout=120s
 
 # -------------------------------
 # STEP 4: Ensure rollout history
@@ -92,4 +98,4 @@ kubectl top pods || echo "⚠️ Metrics not ready yet"
 # -------------------------------
 echo "🔁 Starting Health Monitoring..."
 cd health
-python3 health_multi.py
+python3 health_multi.py &
