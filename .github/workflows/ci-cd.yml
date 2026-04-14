@@ -11,31 +11,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Build Docker Images
-        run: |
-          docker compose up --build
+        run: docker-compose build
+
 
   test:
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Start Services
-        run: |
-          docker compose up -d
+        run: docker-compose up -d --build
 
       - name: Wait for services
-        run: sleep 20
+        run: sleep 30
 
-      - name: Install Python deps
-        run: |
-          pip install requests
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install deps
+        run: pip install requests
 
       - name: Run Health Check
         id: health
@@ -51,6 +52,7 @@ jobs:
 
     outputs:
       result: ${{ steps.health.outputs.status }}
+
 
   deploy:
     runs-on: ubuntu-latest
