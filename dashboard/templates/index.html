@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HealthOps — CI/CD Observability</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+
+  <!-- ── TOP NAV ───────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo-mark">⬡</span>
+      <span class="logo-text">HealthOps</span>
+      <span class="logo-sub">CI/CD Observability</span>
+    </div>
+    <div class="topbar-center">
+      <div id="sys-badge" class="sys-badge">
+        <span class="sys-badge-dot"></span>
+        <span class="sys-badge-label">Connecting…</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="meta-item">
+        <span class="meta-icon">🕐</span>
+        <span id="last-update">—</span>
+      </span>
+      <span class="meta-item">
+        <span class="meta-icon">🔁</span>
+        Rollbacks: <span id="rollback-count">0</span>
+      </span>
+      <span class="poll-pill" id="poll-pill">LIVE</span>
+    </div>
+  </header>
+
+  <!-- ── ALERT BANNER (hidden until triggered) ─ -->
+  <div id="alert-banner" class="alert-banner hidden">
+    <span class="alert-icon">🚨</span>
+    <span id="alert-text"></span>
+    <button class="alert-close" onclick="dismissAlert()">✕</button>
+  </div>
+
+  <!-- ── ROLLBACK TOAST ──────────────────────── -->
+  <div id="rollback-toast" class="rollback-toast hidden">
+    <div class="toast-inner">
+      <span class="toast-icon">🔁</span>
+      <div>
+        <div class="toast-title">ROLLBACK TRIGGERED</div>
+        <div class="toast-sub" id="toast-sub">—</div>
+      </div>
+    </div>
+  </div>
+
+  <main class="main-grid">
+
+    <!-- ── SYSTEM HEALTH PANEL ────────────────── -->
+    <section class="panel panel--system" id="panel-system">
+      <div class="panel-header">
+        <span class="panel-title">System Health</span>
+        <span class="panel-label">AGGREGATED · min(services)</span>
+      </div>
+      <div class="system-score-row">
+        <div class="score-ring-wrap">
+          <svg class="score-ring" viewBox="0 0 120 120">
+            <circle class="ring-bg"   cx="60" cy="60" r="52" />
+            <circle class="ring-fill" cx="60" cy="60" r="52" id="ring-fill" />
+          </svg>
+          <div class="score-center">
+            <span class="score-big" id="sys-score">—</span>
+            <span class="score-unit">H</span>
+          </div>
+        </div>
+        <div class="system-meta-grid">
+          <div class="smeta">
+            <span class="smeta-label">Last Event</span>
+            <span class="smeta-value" id="last-event">—</span>
+          </div>
+          <div class="smeta">
+            <span class="smeta-label">Last Rollback</span>
+            <span class="smeta-value mono" id="last-rollback">Never</span>
+          </div>
+          <div class="smeta">
+            <span class="smeta-label">Threshold</span>
+            <span class="smeta-value mono">H ≥ 0.75</span>
+          </div>
+          <div class="smeta">
+            <span class="smeta-label">Poll Interval</span>
+            <span class="smeta-value mono">2 s</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SERVICE CARDS ──────────────────────── -->
+    <section class="services-row">
+      <div id="card-order"    class="svc-card" data-svc="order">    </div>
+      <div id="card-tracking" class="svc-card" data-svc="tracking"> </div>
+      <div id="card-delivery" class="svc-card" data-svc="delivery"> </div>
+    </section>
+
+    <!-- ── CHARTS ROW ─────────────────────────── -->
+    <section class="charts-row">
+      <div class="panel panel--chart">
+        <div class="panel-header">
+          <span class="panel-title">Health Score — Time Series</span>
+          <span class="panel-label">last 60 pts · 2 s interval</span>
+        </div>
+        <canvas id="chart-health"></canvas>
+      </div>
+      <div class="panel panel--chart">
+        <div class="panel-header">
+          <span class="panel-title">CPU Usage — Time Series</span>
+          <span class="panel-label">millicores · last 60 pts</span>
+        </div>
+        <canvas id="chart-cpu"></canvas>
+      </div>
+    </section>
+
+    <!-- ── BOTTOM ROW: latency sparklines + event log ─ -->
+    <section class="bottom-row">
+      <div class="panel panel--latency">
+        <div class="panel-header">
+          <span class="panel-title">Latency — Time Series</span>
+          <span class="panel-label">seconds · last 60 pts</span>
+        </div>
+        <canvas id="chart-latency"></canvas>
+      </div>
+
+      <div class="panel panel--events">
+        <div class="panel-header">
+          <span class="panel-title">Event Log</span>
+          <span class="panel-label">rolling · last 20</span>
+        </div>
+        <ul id="event-log" class="event-log"></ul>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── FOOTER ─────────────────────────────── -->
+  <footer class="footer">
+    <span>Health-Score-Gated CI/CD Deployment Framework</span>
+    <span class="footer-sep">·</span>
+    <span>Kubernetes / Prometheus / GitHub Actions</span>
+    <span class="footer-sep">·</span>
+    <span id="footer-time"></span>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="/static/script.js"></script>
+</body>
+</html>

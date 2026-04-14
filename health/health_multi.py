@@ -3,6 +3,8 @@ import subprocess
 import math
 import time
 
+latest_data = {}
+
 PROM_URL = "http://localhost:9090/api/v1/query"
 
 LATENCY_THRESHOLD = 0.5
@@ -82,13 +84,13 @@ def compute_service_health(service, metrics):
 
 
 
-if __name__ == "__main__":
+def main_loop():
+    global last_rollback_time
+
     print("🔁 Multi-service health monitoring...\n")
 
     while True:
-        
         metrics = get_k8s_metrics()
-        print("DEBUG METRICS:", metrics)
         health_scores = []
 
         print("====== SYSTEM STATUS ======")
@@ -102,11 +104,20 @@ if __name__ == "__main__":
             print(f"CPU: {cpu}m | Memory: {mem}Mi")
             print(f"Health: {H:.3f}")
 
-        # 🔥 Aggregate (worst-case strategy)
+            # ✅ FIXED: correct placement
+            latest_data[svc] = {
+                "latency": latency,
+                "cpu": cpu,
+                "memory": mem,
+                "health": H
+            }
+
         H_total = min(health_scores)
 
         print("\n---------------------------")
         print(f"System Health (min): {H_total:.3f}")
+
+        latest_data["system_health"] = H_total
 
         current_time = time.time()
 
@@ -120,18 +131,10 @@ if __name__ == "__main__":
                     if health_scores[i] < 0.75:
                         print(f"🔁 Rolling back {svc}")
 
-                        result = subprocess.run(
-                            ["kubectl", "rollout", "undo", f"deployment/{svc}"],
-                            capture_output=True,
-                            text=True
+                        subprocess.run(
+                            ["kubectl", "rollout", "undo", f"deployment/{svc}"]
                         )
 
-                        if "no rollout history" in result.stderr:
-                            print(f"⚠️ No rollback history for {svc}")
-                        else:
-                            print(f"✅ {svc} rolled back successfully")
-
-                # 🔥 Update cooldown timer
                 last_rollback_time = current_time
         else:
             print("✅ SYSTEM HEALTHY")
@@ -139,3 +142,7 @@ if __name__ == "__main__":
         print("===========================\n")
 
         time.sleep(5)
+
+
+if __name__ == "__main__":
+    main_loop()
