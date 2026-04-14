@@ -91,4 +91,5 @@ kubectl top pods || echo "⚠️ Metrics not ready yet"
 # STEP 10: Start Health Monitor
 # -------------------------------
 echo "🔁 Starting Health Monitoring..."
+cd health
 python3 health_multi.py
