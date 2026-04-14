@@ -92,4 +92,4 @@ kubectl top pods || echo "⚠️ Metrics not ready yet"
 # -------------------------------
 echo "🔁 Starting Health Monitoring..."
 cd health
-python3 dashboard/app.py
+python3 health_monitor.py
